@@ -11,7 +11,8 @@
 ' Change these constants as as needed
 Const KVMin = 0        
 Const KVMax = 999
-Const maxLines  = 10000
+Const maxLines  = 100000
+Const areaNum = 536
 '
 '==========================
 ' Do not change this constant
@@ -40,7 +41,7 @@ Sub main()
       ' Do it for only selected line
       LineCount  = 1
    Else
-      resp = MsgBox( "Do you want to print impedance of all lines in kV range: " & KVMin & "-" & KVMax, 4+32, "Line Impedance" ) 
+      resp = MsgBox( "Do you want to print impedance of all lines in kV range: " & KVMin & "-" & KVMax & " for Area Number:" & areaNum, 4+32, "Line Impedance" ) 
       If 6 <> resp Then Stop      
       ' Do it for all lines withing kV range
       PickedHnd& = 0
@@ -48,13 +49,15 @@ Sub main()
       While GetEquipment( TC_LINE, PickedHnd& ) > 0
         If ProcessedHnd(PickedHnd&-hndOffset) = 0 Then
           Call GetData( PickedHnd, LN_nBus1Hnd, Bus1Hnd& )
-          Call getdata( Bus1Hnd, BUS_dKVNominal,dKV# )
+          Call GetData( Bus1Hnd, BUS_dKVNominal,dKV# )
           If dKV >= KVMin And dKV <= KVmax Then
             Call GetData( Bus1Hnd, BUS_nTapBus, TapCode1& )
+            Call GetData( Bus1Hnd, BUS_nArea, BusArea1&)
             Call GetData( PickedHnd, LN_nBus2Hnd, Bus2Hnd& )
             Call GetData( Bus2Hnd, BUS_nTapBus, TapCode2& )
-            If TapCode1 = 0 Or TapCode2 = 0 Then
-              Call compuOneLine( PickedHnd& )       ' Want to start from a real bus
+            Call GetData( Bus2Hnd, BUS_nArea, BusArea2&)
+            If TapCode1 = 0 And BusArea1 = areaNum Or TapCode2 = 0 And BusArea2 = areaNum Then
+              Call compuOneLine( PickedHnd& )       ' Want to start from a real bus in our area
               LineCount = LineCount + 1
             End If
           End If
@@ -222,9 +225,9 @@ End Function
 Function printImpedance( dR#, dX#, dKV# ) As String
  dMag = Sqr( dR#^2 + dX#^2 )*dKV#^2/100
  If dR# <> 0.0 Then 
-   dAng = Atn(dX#/dR#)*180/3.14156 
+   dAng = Atn(dX#/dR#)*180/3.14159 
  Else 
-   if dX# > 0 then dAng = 90 else dAng = -90
+   If dX# > 0 Then dAng = 90 Else dAng = -90
  End If
  printImpedance = Format(dR#,"0.00000") & "+j" & Format(dX#,"0.00000") & "pu" _
           & "(" & Format(dMag,"0.00") & "@" & Format(dAng,"0.00") & "Ohm)"
